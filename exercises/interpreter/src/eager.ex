@@ -1,15 +1,15 @@
 defmodule Eager do
 
   @type atm :: {:atm, atom()}
-  @type var :: {:var, atom()}
+  @type variable :: {:variable, atom()}
   @type ignore :: :ignore
 
-  @type lambda :: {:lambda, [var], [var], seq}
+  @type lambda :: {:lambda, [variable], [variable], seq}
 
   @type cons(e) :: {:cons, e, e}
-  @type expr :: atm | var | lambda | call | case | cons(expr)
+  @type expr :: atm | variable | lambda | call | case | cons(expr)
 
-  @type pattern :: atm | var | ignore | cons(pattern)
+  @type pattern :: atm | variable | ignore | cons(pattern)
 
   @type match :: {:match, pattern, expr}
   @type seq :: [expr] | [match | seq]
@@ -19,14 +19,14 @@ defmodule Eager do
   @type case :: {:case, expr, [clause]}
 
   # Expressions are evaluated to structures.
-  @type closure :: {:closure, [var], seq, env}
+  @type closure :: {:closure, [variable], seq, env}
   @type str :: atom() | [str] | closure
 
-  # An environment is a key-value of variable to structure.
-  @type env :: [{var, str}]
+  # An environment is a key-value of variableiable to structure.
+  @type env :: [{variable, str}]
 
   # A program is a list of named functions
-  @type prgm :: [{atom(), [var], seq}]
+  @type prgm :: [{atom(), [variable], seq}]
 
   @doc """
   Evaluate a sequence given a program.
@@ -50,8 +50,8 @@ defmodule Eager do
         :error
 
       {:ok, str} ->
-        vars = extract_vars(ptr)
-        env = Env.remove(vars, env)
+        variables = extract_variables(ptr)
+        env = Env.remove(variables, env)
 
         case eval_match(ptr, str, env) do
           :fail ->
@@ -70,7 +70,7 @@ defmodule Eager do
   def eval_expr({:atm, id}, _, _) do
     {:ok, id}
   end
-  def eval_expr({:var, id}, env, _) do
+  def eval_expr({:variable, id}, env, _) do
     case Env.lookup(id, env) do
       nil ->
         :error
@@ -152,7 +152,7 @@ defmodule Eager do
   def eval_match({:atm, id}, id, env) do
     {:ok, env}
   end
-  def eval_match({:var, id}, str, env) do
+  def eval_match({:variable, id}, str, env) do
     case Env.lookup(id, env) do
       nil ->
         {:ok, Env.add(id, str, env)}
@@ -189,8 +189,8 @@ defmodule Eager do
     :error
   end
   def eval_cls([{:clause, ptr, seq} | cls], str, env, prg) do
-    vars = extract_vars(ptr)
-    env = Env.remove(vars, env)
+    variables = extract_variables(ptr)
+    env = Env.remove(variables, env)
 
     case eval_match(ptr, str, env) do
       :fail ->
@@ -224,19 +224,19 @@ defmodule Eager do
     end
   end
 
-  @spec extract_vars(pattern) :: [var]
-  def extract_vars(pattern) do
-    extract_vars(pattern, [])
+  @spec extract_variables(pattern) :: [variable]
+  def extract_variables(pattern) do
+    extract_variables(pattern, [])
   end
 
-  @spec extract_vars(pattern, [var]) :: [var]
-  def extract_vars({:atm, _}, vars) do vars end
-  def extract_vars(:ignore, vars) do vars end
-  def extract_vars({:var, var}, vars) do
-    [var | vars]
+  @spec extract_variables(pattern, [variable]) :: [variable]
+  def extract_variables({:atm, _}, variables) do variables end
+  def extract_variables(:ignore, variables) do variables end
+  def extract_variables({:variable, variable}, variables) do
+    [variable | variables]
   end
-  def extract_vars({:cons, head, tail}, vars) do
-    extract_vars(tail, extract_vars(head, vars))
+  def extract_variables({:cons, head, tail}, variables) do
+    extract_variables(tail, extract_variables(head, variables))
   end
 
 end
